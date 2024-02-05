@@ -1,7 +1,6 @@
-import os
 import tensorflow as tf
 import json
-from transformers import TFBertForSequenceClassification, BertTokenizer, AutoConfig
+from transformers import BertTokenizer, TFBertForSequenceClassification, AutoConfig
 
 
 def model_fn(model_dir):
@@ -15,9 +14,8 @@ def input_fn(request_body, request_content_type):
 	if request_content_type == 'application/json':
 		input_data = json.loads(request_body)
 		raw_text = input_data['text']
-		# Tokenize the request body
-		tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 		# Tokenize the input text
+		tokenizer = BertTokenizer.from_pretrained('/opt/ml/model')
 		tokens = tokenizer.encode_plus(raw_text, truncation=True, padding=True, max_length=50, return_tensors="tf")
 		return {'input_ids': tokens['input_ids'], 'attention_mask': tokens['attention_mask']}
 	else:
@@ -50,4 +48,3 @@ def output_fn(prediction, content_type):
 		return json.dumps(probabilities), 'application/json'
 	else:
 		raise ValueError("This model only supports application/json output")
-
