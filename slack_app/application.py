@@ -37,14 +37,19 @@ def handle_shortcut(ack, shortcut, client):
         ContentType='application/json',
         Body=payload
     )
-    inference_result = json.load(response['Body'][0])
-    rounded_result = {label: round(percentage * 100, 2) for label, percentage in inference_result.items()}
-    logger.info(f"Received inference result from SageMaker: {rounded_result}")
-
-    # Respond in Slack
-    result_message = f"Prediction result: {rounded_result}"
-    client.chat_postMessage(channel=shortcut['channel']['id'], text=result_message)
-    logger.info(f"Successfully sent message to Slack: {result_message}")
+    response_body = response['Body'].read().decode('utf-8')
+    if response_body:
+        inference_result = json.loads(response_body)
+        logger.info(f"Inference results: {inference_result}")
+        inference_result = inference_result[0]
+        logger.info(f"Received inference result from SageMaker model: {inference_result}")
+        inference_dict = json.loads(inference_result)
+        # round the probabilities to 2 decimal places
+        inference_result = {key: round(float(value), 2) for key, value in inference_dict.items()}
+        # Respond in Slack
+        result_message = f"Message: {message_text} \n Prediction result: {inference_result}"
+        client.chat_postMessage(channel=shortcut['channel']['id'], text=result_message)
+        logger.info(f"Successfully sent message to Slack: {result_message}")
 
 
 # Start your app
