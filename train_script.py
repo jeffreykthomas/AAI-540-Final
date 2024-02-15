@@ -47,7 +47,9 @@ if __name__ == '__main__':
 	region_name = 'us-west-2'
 	bucket_name = 'aai-540-final-data'
 
-	session = sagemaker.Session()
+	boto_session = boto3.Session(region_name=region_name)
+
+	session = sagemaker.Session(boto_session=boto_session)
 	featurestore_runtime = session.boto_session.client(
 		service_name='sagemaker-featurestore-runtime',
 		region_name=region_name)
@@ -166,10 +168,20 @@ if __name__ == '__main__':
 	else:
 		raise ValueError("Invalid learning rate scheduler")
 
-	optimizer = tf.keras.optimizers.legacy.Adam(learning_rate=lr_scheduler)
+	optimizer = tf.keras.optimizers.Adam(learning_rate=lr_scheduler)
 	loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 
 	model.compile(optimizer=optimizer, loss=loss, metrics=['accuracy'])
+	model.fit(train_dataset, epochs=args.epochs, validation_data=val_dataset)
 	# Save your model to SM_MODEL_DIR
 	path = os.environ['SM_MODEL_DIR']
 	model.save_pretrained(path)
+	tokenizer.save_pretrained(path)
+
+	tar_file = 'tuned_model.tar.gz'
+	command = f"tar -czvf {tar_file} -C {path} ."
+	os.system(command)
+	# Upload the tar file to S3
+	s3 = boto3.client('s3')
+	s3_key = f'models/{tar_file}'
+	s3.upload_file(tar_file, bucket_name, s3_key)
