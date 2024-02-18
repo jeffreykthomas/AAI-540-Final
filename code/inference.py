@@ -1,4 +1,3 @@
-
 import tensorflow as tf
 import json
 from transformers import BertTokenizer, TFBertForSequenceClassification, AutoConfig

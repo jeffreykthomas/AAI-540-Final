@@ -1,9 +1,10 @@
-
 from transformers import BertTokenizer
 import pandas as pd
 import tensorflow as tf
+import os
 
 base_dir = '/opt/ml/processing'
+
 
 def serialize_example(token_ids, attention_mask, label):
     feature = {
@@ -13,6 +14,7 @@ def serialize_example(token_ids, attention_mask, label):
     }
     example_proto = tf.train.Example(features=tf.train.Features(feature=feature))
     return example_proto.SerializeToString()
+
 
 def save_data(texts, labels, tokenizer, destination):
     serialized_examples = []
@@ -25,6 +27,7 @@ def save_data(texts, labels, tokenizer, destination):
         for example in serialized_examples:
             writer.write(example)
 
+            
 if __name__ == '__main__':
     tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 

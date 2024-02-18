@@ -1,12 +1,4 @@
-
-import boto3
-import csv
-
 import pandas as pd
-import io
-
-import matplotlib.pyplot as plt
-import seaborn as sns
 from sklearn.model_selection import train_test_split
 
 region_name = 'us-west-2'

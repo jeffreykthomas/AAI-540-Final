@@ -7,13 +7,13 @@ def lambda_handler(event, context):
     client = boto3.client('sagemaker')
     
     model_name = event['model_name']
-    endpoint_config_name = f'{event['endpoint_config_name']}-{current_time}'
+    endpoint_config_name = f'{event["endpoint_config_name"]}-{current_time}'
     endpoint_name = event['endpoint_name']
     
     instance_type = event['endpoint_instance_type']
 
     # Create an endpoint configuration
-    endpoint_config_response = sagemaker_client.create_endpoint_config(
+    endpoint_config_response = client.create_endpoint_config(
         EndpointConfigName=endpoint_config_name,
         ProductionVariants=[
             {
@@ -24,7 +24,7 @@ def lambda_handler(event, context):
             }
         ]
     )
-    print(f'Endpoint Config Arn: {endpoint_config_response['EndpointConfigArn']}')
+    print(f'Endpoint Config Arn: {endpoint_config_response["EndpointConfigArn"]}')
 
     list_endpoints_response = client.list_endpoints(
         SortBy="CreationTime",

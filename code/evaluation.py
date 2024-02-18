@@ -4,8 +4,7 @@ import tarfile
 import tensorflow as tf
 from transformers import TFBertForSequenceClassification, BertTokenizer
 import numpy as np
-import pandas as pd
-from sklearn.metrics import accuracy_score, f1_score
+from sklearn.metrics import f1_score
 
 base_dir = '/opt/ml/processing'
 
