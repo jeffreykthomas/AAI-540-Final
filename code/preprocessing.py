@@ -1,5 +1,7 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
+import random
+import os
 
 region_name = 'us-west-2'
 bucket_name = 'aai-540-final-data'
