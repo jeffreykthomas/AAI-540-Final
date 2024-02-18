@@ -63,7 +63,7 @@ for category, emotions in emotion_categories.items():
 category_names = list(emotion_categories.keys())
 category_to_index = {category: index for index, category in enumerate(category_names)}
 
-if __name__ == '__main__'
+if __name__ == '__main__':
 
     base_dir = '/opt/ml/processing'
 
