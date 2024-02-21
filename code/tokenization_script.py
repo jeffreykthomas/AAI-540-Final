@@ -1,9 +1,20 @@
-from transformers import BertTokenizer
-import pandas as pd
-import tensorflow as tf
 import os
+import csv
+from transformers import BertTokenizer
+import tensorflow as tf
 
 base_dir = '/opt/ml/processing'
+
+
+def load_data_from_csv(file_path):
+    texts, labels = [], []
+    with open(file_path, newline='', encoding='utf-8') as csvfile:
+        reader = csv.reader(csvfile)
+        next(reader)  # Skip header
+        for row in reader:
+            texts.append(row[0])
+            labels.append(int(row[1]))  # Ensure label is int if it's not already
+    return texts, labels 
 
 
 def serialize_example(token_ids, attention_mask, label):
@@ -19,11 +30,11 @@ def serialize_example(token_ids, attention_mask, label):
 def save_data(texts, labels, tokenizer, destination):
     serialized_examples = []
     for text, label in zip(texts, labels):
-        encoding = tokenizer.encode_plus(text, truncation=True, padding=True, max_length=50)
+        encoding = tokenizer.encode_plus(text, truncation=True, padding='max_length', max_length=50)
         serialized_example = serialize_example(encoding['input_ids'], encoding['attention_mask'], label)
         serialized_examples.append(serialized_example)
     
-    with tf.io.TFRecordWriter(f'{base_dir}/{destination}/tokenized_data.tfrecord') as writer:
+    with tf.io.TFRecordWriter(f'{destination}/tokenized_data.tfrecord') as writer:
         for example in serialized_examples:
             writer.write(example)
 
@@ -31,16 +42,12 @@ def save_data(texts, labels, tokenizer, destination):
 if __name__ == '__main__':
     tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 
-    df_train = pd.read_csv(f'{base_dir}/output/train/train.csv')
-    df_val = pd.read_csv(f'{base_dir}/output/validation/validation.csv')
-    df_test = pd.read_csv(f'{base_dir}/output/test/test.csv')
-
-    output_dirs = ['output/tokenized/train', 'output/tokenized/validation', 'output/tokenized/test']
-    for output_dir in output_dirs:
-        full_dir = f'{base_dir}/{output_dir}'
-        if not os.path.exists(full_dir):
-            os.makedirs(full_dir)
-
-    save_data(df_train['text'].tolist(), df_train['emotions'].tolist(), tokenizer, 'output/tokenized/train')
-    save_data(df_val['text'].tolist(), df_val['emotions'].tolist(), tokenizer, 'output/tokenized/validation')
-    save_data(df_test['text'].tolist(), df_test['emotions'].tolist(), tokenizer, 'output/tokenized/test')
+    datasets = ['train', 'validation', 'test']
+    
+    for dataset in datasets:
+        file_path = f'{base_dir}/input/{dataset}/{dataset}.csv'
+        texts, labels = load_data_from_csv(file_path)
+        output_dir = f'{base_dir}/output/tokenized/{dataset}'
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        save_data(texts, labels, tokenizer, output_dir)

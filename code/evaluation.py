@@ -4,19 +4,26 @@ import tarfile
 import tensorflow as tf
 from transformers import TFBertForSequenceClassification, BertTokenizer
 import numpy as np
+import os
 from sklearn.metrics import f1_score
 
 base_dir = '/opt/ml/processing'
 
 
-def extract_model(model_path=f'{base_dir}/model/model.tar.gz', extract_path='model'):
+def extract_model(model_path=f'{base_dir}/model/model.tar.gz', extract_path=f'{base_dir}/model/extracted_model'):
     with tarfile.open(model_path) as tar:
         tar.extractall(path=extract_path)
+    if not os.path.exists(extract_path):
+        os.makedirs(extract_path)
     return extract_path
 
 
 def load_model(model_dir='model'):
     model = TFBertForSequenceClassification.from_pretrained(model_dir)
+    optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
+    loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+
+    model.compile(optimizer=optimizer, loss=loss, metrics=['accuracy'])
     return model
 
 
@@ -40,26 +47,31 @@ def load_dataset(file_path):
 
 
 if __name__ == '__main__':
-    model_path = f'{base_dir}/models/tuned_model'
+    model_path = f'{base_dir}/model'
     tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
     
-    test_dataset = load_dataset(f'{base_dir}/output/tokenized/test/tokenized_data.tfrecord')
-    test_dataset = test_dataset.batch(16).prefetch(tf.data.experimental.AUTOTUNE)
+    test_dataset = load_dataset(f'{base_dir}/input/tokenized/test/tokenized_data.tfrecord')
+    test_dataset = test_dataset.batch(27).prefetch(tf.data.experimental.AUTOTUNE)
     
     model_extracted_path = extract_model()
     model = load_model(model_extracted_path)
    
     # Evaluate the model
-    loss, accuracy = model.evaluate(test_dataset, return_dict=True)
-    predictions = np.argmax(model.predict(test_dataset).logits, axis=1)
-    true_labels = np.array([label for _, label in test_dataset])
+    logits = model.predict(test_dataset).logits
+    predictions = np.argmax(logits, axis=1)
     
+    true_labels = []
+    for _, labels in test_dataset:
+        true_labels.extend(labels.numpy())
+    true_labels = np.array(true_labels)
+
     f1 = f1_score(true_labels, predictions, average='weighted')
+    accuracy = np.mean(np.array(predictions) == np.array(true_labels))
     
     report_dict = {
         'classification_metrics': {
             'accuracy': {'value': accuracy},
-            'f1_score': {'value': f1},
+            'f1': {'value': f1},
         },
     }
 
