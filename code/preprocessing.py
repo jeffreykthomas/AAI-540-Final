@@ -3,7 +3,7 @@ from sklearn.model_selection import train_test_split
 import random
 import os
 
-region_name = 'us-west-2'
+region_name = 'us-east-2'
 bucket_name = 'aai-540-final-data'
 
 emotion_labels = [

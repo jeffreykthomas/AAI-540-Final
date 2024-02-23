@@ -36,8 +36,9 @@ def logits_to_top_n_prob(logits, class_names, top_n=3):
 	# Get the top n probabilities
 	top_n_indices = probabilities.argsort()[-top_n:][::-1]
 	top_n_probabilities = {class_names[i]: float(probabilities[i]) for i in top_n_indices}
+	top_score = {class_names[top_n_indices[0]]: float(probabilities[top_n_indices[0]])}
 
-	return top_n_probabilities
+	return {"slack_app": top_n_probabilities, "predictions": top_score}
 
 
 def output_fn(prediction, content_type):
