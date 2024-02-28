@@ -28,7 +28,7 @@ def handle_shortcut(ack, shortcut, client):
     message_text = shortcut['message']['text']
     logger.info(f"Received shortcut request with message: {message_text}")
 
-    sagemaker_client = boto3.client('sagemaker-runtime', region_name='us-west-2')
+    sagemaker_client = boto3.client('sagemaker-runtime', region_name='us-east-2')
     payload = json.dumps({"text": message_text})
     logger.info(f"Invoking SageMaker endpoint with payload: {payload}")
 
@@ -37,6 +37,17 @@ def handle_shortcut(ack, shortcut, client):
         ContentType='application/json',
         Body=payload
     )
+    label_to_emoji = {
+        "anger": ":angry:",
+        "disgust": ":face_vomiting:",
+        "fear": ":fearful:",
+        "happy": ":smiley:",
+        "optimistic": ":grinning_face_with_star_eyes:",
+        "affectionate": ":heart_eyes:",
+        "sad": ":cry:",
+        "surprised": ":open_mouth:",
+        "neutral": ":neutral_face:"
+    }
     response_body = response['Body'].read().decode('utf-8')
     if response_body:
         inference_result = json.loads(response_body)
@@ -46,9 +57,16 @@ def handle_shortcut(ack, shortcut, client):
         inference_dict = json.loads(inference_result)
         # round the probabilities to 2 decimal places
         inference_result = {key: round(float(value), 2) for key, value in inference_dict.items()}
-        # Respond in Slack
-        result_message = f"Message: {message_text} \n Prediction result: {inference_result}"
-        client.chat_postMessage(channel=shortcut['channel']['id'], text=result_message)
+        # Convert the labels to emojis
+        inference_result = {label_to_emoji[key]: value for key, value in inference_result.items()}
+        inference_string = ', '.join(f"{key}: {value*100}%" for key, value in inference_result.items())
+        # Respond in Slack using ephemeral message
+        result_message = f"*_Message to analyze_*: {message_text}\n*_Prediction result_*: {inference_string}"
+        client.chat_postEphemeral(
+            channel=shortcut['channel']['id'],
+            user=shortcut['user']['id'],
+            text=result_message
+        )
         logger.info(f"Successfully sent message to Slack: {result_message}")
 
 
